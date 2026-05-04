@@ -85,7 +85,29 @@ podman build -t mcp-schabi .
 podman run -d --name mcp-schabi -p 8006:8006 --env-file .env mcp-schabi
 ```
 
-### 3. Add to your MCP client
+See the **Docker Compose** section below for how to add the server to your MCP client.
+
+---
+
+## Running with Docker Compose
+
+Works with both Docker and Podman (via `podman compose`).
+
+### 1. Start the service
+
+```bash
+docker compose up -d --build
+```
+
+Or with Podman:
+
+```bash
+podman compose up -d --build
+```
+
+The server will be available on port 8006.
+
+### 2. Add to your MCP client
 
 For **Antigravity** (or any streamable-http client):
 
@@ -99,15 +121,40 @@ For **Antigravity** (or any streamable-http client):
 }
 ```
 
+### Troubleshooting
+
+If the container keeps restarting:
+
+```bash
+docker compose logs -f
+# or
+docker logs -f mcp-schabi
+```
+
+Common causes:
+- The container was started with the `mcp-schabi` command (stdio mode) instead of the HTTP mode defined in the Dockerfile. Use `docker compose` or the exact `fastmcp run ... --transport streamable-http` command.
+- Required environment variables are missing or incorrectly named. The server itself won't crash, but an MCP client calling tools will get errors.
+- Port 8006 is already in use on the host.
+
 ---
 
 ## Running without a container
 
-### 1. Install
+It is strongly recommended to use a virtual environment.
+
+### 1. Create & activate a virtual environment + install
 
 ```bash
-pip install .
+python -m venv .venv
+source .venv/bin/activate          # Linux / macOS
+# .venv\Scripts\activate           # Windows (PowerShell)
+
+pip install -e .
 ```
+
+The `-e` (editable) flag is useful during development.
+
+After this step the `mcp-schabi` command becomes available and all dependencies (including `fastmcp`) are installed.
 
 ### 2. Set environment variables
 
@@ -131,11 +178,22 @@ Or directly:
 python -m mcp_schabi.server
 ```
 
-For HTTP transport (e.g. testing):
+**Important**: The stdio transport is designed to be launched by an MCP client (Claude Desktop, Cursor, Antigravity, etc.). After the log line
+
+```
+INFO     Starting MCP server 'schabi' with transport 'stdio'
+```
+
+the process will stay running and wait for JSON-RPC messages on stdin/stdout.  
+**This is normal behavior** — you will not get a new shell prompt. The server is ready and listening for your AI assistant.
+
+If you want to test the server manually or use it over the network, use the HTTP transport instead:
 
 ```bash
-fastmcp run mcp_schabi.server:mcp --transport streamable-http --host 0.0.0.0 --port 8006
+fastmcp run src/mcp_schabi/server.py:mcp --transport streamable-http --host 0.0.0.0 --port 8006
 ```
+
+Then point your MCP client to `http://localhost:8006/mcp`.
 
 ---
 

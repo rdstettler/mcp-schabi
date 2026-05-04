@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8006
 
-CMD ["fastmcp", "run", "mcp_schabi.server:mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8006"]
+CMD ["fastmcp", "run", "src/mcp_schabi/server.py:mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8006"]
